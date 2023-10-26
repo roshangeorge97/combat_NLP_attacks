@@ -5,7 +5,7 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output-file', type=str, default='data/red_teams.txt')
-    parser.add_argument('--percentile', type=int, default=5,
+    parser.add_argument('--percentile', type=float, default=5,
                         help='take most toxic x%% of red team attempts')
     args = parser.parse_args()
     return(args)
