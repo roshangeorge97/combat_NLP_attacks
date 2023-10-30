@@ -47,7 +47,7 @@ def get_all_scores(list_of_prompts, model):
 def get_summary_statistics(scores):
     scores = np.array(scores)
     for percentile in [10,30,50,70,90]:
-        print(f'P{percentile} value: {np.percentile(scores, percentile)}\n')
+        print(f'P{percentile} value: {np.percentile(scores, percentile)}')
     print(f'mean: {np.mean(scores)}')
 
 def parse_args():
