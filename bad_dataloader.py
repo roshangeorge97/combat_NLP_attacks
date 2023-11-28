@@ -12,13 +12,17 @@ with open('/home/andyliu/Miniconda3/envs/anlp-hw/lib/python3.10/site-packages/da
     bad_data = f.read().split('\n')
 
 to_json = []
-labels = {'notok':'offensive', 'ok':'inoffensive'}
+prompt_labels = {'notok':'offensive', 'ok':'inoffensive'}
+labels = {'notok':1, 'ok':0}
+
 for line in bad_data:
     if line != '':
         text = line.split('\t')[0].replace('text:', '').split('\\n')
-        prompt = fit_to_prompt_template(text, labels)
+        prompt = fit_to_prompt_template(text, prompt_labels)
         label = labels[line.split('\t')[1].replace('labels:', '').replace('_', '')]
         to_json.append({'text':prompt, 'label':label})
 
-with open('bad_data.json', 'w') as f:
-    json.dump(to_json, f)
+# to_write = json.dumps(to_json)
+with open('bad_data.json', 'w') as f: 
+    to_write = json.dumps({'train':to_json})
+    f.write(to_write)
