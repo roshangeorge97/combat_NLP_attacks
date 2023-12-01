@@ -1,2 +1,4 @@
 __pycache__
 tmp*
+run_model.sh
+slurm*

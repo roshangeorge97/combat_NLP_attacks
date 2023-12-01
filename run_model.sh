@@ -1,33 +1,32 @@
-rounds=2
-agents=2
-
-
-python ./evaluate_model.py \
-    --input-file ./data/red_teams.txt \
-    --output-file ./responses/davinci002-single-agent.txt \
-    --model-type gpt \
-    --openai-model-name text-davinci-002 
-
-python ./evaluate_model.py \
-    --input-file ./data/red_teams.txt \
-    --output-file ./responses/gpt3.5-single-agent.txt \
-    --model-type gpt \
-    --openai-model-name gpt-3.5-turbo-0301
+modelname=llama2_7b_chat_uncensored
+modelname=llama-2-7b-chat-hf
+intent=harmful
+modelname=$1
+intent=$2
 
 '''
-python ./evaluate_model.py \
-    --input-file ./data/red_team_small.txt \
-    --output-file ./data/davinci002-r${rounds}-a${agents}.txt \
-    --openai-model-name text-davinci-002 \
-    --model-type gpt-multiagent \
-    --multiagent-rounds $rounds \
-    --multiagent-agents $agents
+sbatch -c 8 -N 1 --mem=45000 -p gpu --gres=gpu:1 --exclude=boston-2-[25,27,29,31,35] \
+    --wrap="python3 -u ./evaluate_model.py \
+    --input-file ./data/red_teams_small.txt \
+    --output-file ./responses/${modelname}-${intent}-single-agent.txt \
+    --model-type llama \
+    --llama-model-name $modelname \
+    --agent-intention $intent"
 
-python ./evaluate_model.py \
-    --input-file ./data/red_team_small.txt \
-    --output-file ./data/turbo-r${rounds}-a${agents}.txt \
-    --openai-model-name gpt-3.5-turbo-0301 \
-    --model-type gpt-multiagent \
-    --multiagent-rounds $rounds \
-    --multiagent-agents $agents
+srun -c 8 -N 1 --mem=45000 -p gpu --gres=gpu:1 --exclude=boston-2-[25,27,29,31] \
+    python3 -u ./evaluate_model.py \
+    --input-file ./data/red_teams_small.txt \
+    --output-file ./responses/tr${modelname}-${intent}-single-agent.txt \
+    --model-type llama \
+    --llama-model-name $modelname \
+    --agent-intention $intent
 '''
+srun -c 16 -N 1 --mem=90000 -p gpu --gres=gpu:2 --exclude=boston-2-[25,27,29,31] \
+    python3 -u ./evaluate_model.py \
+    --input-file ./data/red_teams_small.txt \
+    --output-file ./responses/tr${modelname}-${intent}-self-reflect.txt \
+    --model-type multiagent \
+    --agent-modelname $modelname \
+    --agent-intention $intent \
+    --multiagent-agents 2 \
+    --multiagent-rounds 2

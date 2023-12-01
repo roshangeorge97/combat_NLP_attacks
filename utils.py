@@ -27,7 +27,7 @@ def generate_response_openai(context, modelname):
 
     elif modelname.startswith("davinci") or modelname.startswith("text-davinci"):
         context_str = "\n".join(
-            [f"{message['role']}: {message['content']}" for message in context]
+            [f"{message['role']}: {message['content']}" for message in context[-1:]]
         )
         while(fails < 5):
             try:
@@ -48,5 +48,27 @@ def generate_response_openai(context, modelname):
                 fails += 1
         raise Exception("API failed to respond after 5 attempts.")
     else:
-        raise NotImplementedError("Model not implemented.")
-    
+        raise NotImplementedError(f"{modelname} model not implemented.")
+
+def generate_response_llama(pipeline, dialog):
+    context_str = " ".join([message["content"] for message in dialog])
+    num_try = 0
+    print("\n\nCONTEXT: ", context_str, "\n\n")
+    while num_try<=5:
+        outputs = pipeline(context_str)
+        generation = outputs[0]["generated_text"][len(context_str):].strip()
+        generation = " ".join(generation.split()[:256])
+        '''
+        if "### RESPONSE:" in generation:
+            # Uncensored LLAMA
+            generation = generation.split("### RESPONSE:")[-1].strip().replace("\n", " ")
+        else:
+            # Normal LLAMA
+            generation = generation.split("[/INST]")[-1].strip().replace("\n", " ")
+        '''
+        generation = generation.strip().replace("\n", " ")
+        if len(generation.strip().split()) > 20:
+            return generation
+        num_try += 1
+    print("No long answers.")
+    return generation
