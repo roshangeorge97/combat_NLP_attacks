@@ -1,4 +1,7 @@
 __pycache__
 tmp*
-run_model.sh
 slurm*
+*.log
+*.out
+*.sh
+wandb/*
