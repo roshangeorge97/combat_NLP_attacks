@@ -25,7 +25,8 @@ def generate_response_openai(context, modelname):
                 fails += 1
         raise Exception("API failed to respond after 5 attempts.") 
 
-    elif modelname.startswith("davinci") or modelname.startswith("text-davinci"):
+    elif modelname.startswith("davinci") or modelname.startswith("text-davinci") or modelname.startswith("babbage") or modelname.startswith("text-babbage") \
+        or modelname.startswith("curie") or modelname.startswith("text-curie") or modelname.startswith("ada") or modelname.startswith("text-ada"):
         context_str = "\n".join(
             [f"{message['role']}: {message['content']}" for message in context[-1:]]
         )
