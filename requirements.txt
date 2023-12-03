@@ -11,6 +11,6 @@ tqdm==4.64.1
 yarl==1.9.2
 torch==2.1.0
 transformers==4.28.1
-google-api-python-client=2.108.0
+google-api-python-client==2.108.0
 accelerate==0.24.1
 sentencepiece
