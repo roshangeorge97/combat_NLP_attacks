@@ -5,3 +5,5 @@ slurm*
 *.out
 *.sh
 wandb/*
+run_model.sh
+

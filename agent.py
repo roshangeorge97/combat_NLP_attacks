@@ -18,22 +18,23 @@ class dummy_model(model_wrapper):
         pass
     def generate(self, prompt):
         return(prompt)
-    
+
 class gpt_agent(model_wrapper):
-    def __init__(self, modelname="gpt-3.5-turbo-0301", intention="neutral", idx=0):
+    def __init__(self, modelname="gpt-3.5-turbo-0301", intention="neutral"):
         self.agent_modelname = modelname
         self.intention = intention
-        self.idx = idx
+        self.prompts = json.load(open("./prompts/gpt_prompts.json", "r"))
+
+        self.cached_response = None
+        print(self.prompts)
         print(f"Using model {self.agent_modelname} with intention {self.intention}.")
-        self.cached_response = None 
 
     def generate(self, context):
-        if self.cached_response is not None and (self.intention=="harmless" or self.intention=="harmful"):
-            return self.cached_response
-        
         if isinstance(context, str):
             context = [{"role": "user", "content": context}]
+
         completion = generate_response_openai(context, self.agent_modelname)
+        
         if self.intention=="harmless" or self.intention=="harmful":
             self.cached_response = completion
         
@@ -44,25 +45,21 @@ class gpt_agent(model_wrapper):
     
     def construct_initial_message(self, prompt):
         self.cached_response = None
-        if self.intention == "harmless" or self.intention == "harmful":
-            prompt = single_agent_prompts[self.intention].format(prompt)
-        return {"role": "user", "content": prompt}
+        return {"role": "user", "content": self.prompts["init"][self.intention].replace("<TOPIC>", prompt)}
         
     def construct_discussion_message(self, topic, feedback_ls):
-
         if len(feedback_ls)==0:
-            return {"role": "user", "content": single_agent_prompts[self.intention].format(topic)}
+            return {"role": "user", "content": self.prompts["self-reflect"][self.intention].replace("<TOPIC>", topic)}
         
-        prefix_string = "These are the recent/updated opinions from other agents: "
-
+        feedbacks = []
         for feedback in feedback_ls:
-            response = "One agent response: ```{}```".format(feedback)
-            prefix_string = prefix_string + response
+            feedbacks.append("One agent response: ```{}```".format(feedback))
+        feedbacks = " ".join(feedbacks)
+        prefix_string = self.prompts["discussion"][self.intention].replace("<TOPIC>", topic).replace("<FEEDBACK>", feedbacks)
 
-        prefix_string = prefix_string + " Use these opinions carefully as additional advice, can you provide an updated answer for the topic '''{}'''?".format(topic)
+        return {"role": "user", "content": prefix_string}
 
-        return {"role": "user", "content": prefix_string}      
-    
+
 class llama_agent(model_wrapper):
     def __init__(self, modelname="llama-2-7b-chat-hf", intention="neutral", idx=0, device="cuda:0"):
         from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
