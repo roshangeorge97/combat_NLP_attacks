@@ -53,7 +53,7 @@ def generate_response_openai(context, modelname):
 def generate_response_llama(pipeline, dialog):
     context_str = " ".join([message["content"] for message in dialog])
     num_try = 0
-    print("\n\nCONTEXT: ", context_str, "\n\n")
+    #print("\n\nCONTEXT: ", context_str, "\n\n")
     while num_try<=5:
         outputs = pipeline(context_str)
         generation = outputs[0]["generated_text"][len(context_str):].strip()

@@ -77,16 +77,12 @@ class llama_agent(model_wrapper):
         else:
             self.prompts = json.load(open("./prompts/llama_prompts.json", "r"))
         self.cached_response = None 
-
-        print(self.prompts)
         print(f"Using model {self.agent_modelname} with intention {self.intention}.")
 
 
         # Load the model
         model_name_or_path = modelname
         int8 = False
-        print(self.get_max_memory())
-        print("To load model")
         self.model = AutoModelForCausalLM.from_pretrained(os.environ["LLAMA_ROOT"]+model_name_or_path,
             torch_dtype=torch.float16,
             load_in_8bit=int8,
@@ -164,8 +160,11 @@ class agent_group(model_wrapper):
                 self.agents.append(gpt_agent(modelname[i], intention[i]))
 
     def select_final_response(self, agent_contexts):
-        if len(agent_contexts[0][-1]["content"]) > 0:
-            return agent_contexts[0][-1]["content"]
+        ret = []
+        for i in range(self.n_agents):
+            ret.append([msg["content"] for msg in agent_contexts[i][1::2]])
+        if len(ret[0]) > 0:
+            return ret
         return "No answer."
 
     def generate(self, initial_prompt, n_agents=0, n_discussion_rounds=0):

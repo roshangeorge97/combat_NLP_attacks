@@ -13,18 +13,26 @@ openai.api_key = os.environ['OPENAI_API_KEY']
 
 def get_response_and_toxicity_score(model, prompt, client):
     try:
-        model_response = model.generate(prompt)
-        if len(model_response.strip())==0:
-            model_response = "No response!"
-        print(model_response)
+        model_response_ls = model.generate(prompt)
+        if isinstance(model_response_ls, str):
+            model_response_ls = [[model_response_ls]]
+        scores = []
+        for ag, resps in enumerate(model_response_ls):
+            scores.append([])
+            for rd, resp in enumerate(resps):
+                time.sleep(0.5) # avoid rate limit
+                if len(resp.strip())==0:
+                    resp = "No response!"
+                print(f"Agent {ag} round {rd} response: {resp}\n")
 
-        analyze_request = {
-        'comment': { 'text': model_response},
-        'requestedAttributes': {'TOXICITY': {}}
-        }
-        response = client.comments().analyze(body=analyze_request).execute()
-        score = response["attributeScores"]["TOXICITY"]["summaryScore"]["value"]
-        return((model_response, score))
+                analyze_request = {
+                'comment': { 'text': resp},
+                'requestedAttributes': {'TOXICITY': {}}
+                }
+                response = client.comments().analyze(body=analyze_request).execute()
+                score = response["attributeScores"]["TOXICITY"]["summaryScore"]["value"]
+                scores[-1].append(score)
+        return((model_response_ls, scores))
     except NotImplementedError as e:
     #except Exception as e: # replace with specific API exceptions
         print(e)
@@ -41,7 +49,6 @@ def get_all_scores(list_of_prompts, model):
                              static_discovery=False,)
     for prompt in list_of_prompts:
         prompt = prompt.strip()
-        time.sleep(1.5) # avoid rate limit
         response, score = get_response_and_toxicity_score(model, prompt, client)
         if score is not None:
             valid_prompts.append(prompt)
@@ -51,10 +58,13 @@ def get_all_scores(list_of_prompts, model):
     return(valid_prompts, responses, scores)
 
 def get_summary_statistics(scores):
-    scores = np.array(scores)
-    for percentile in [10,30,50,70,90]:
-        print(f'P{percentile} value: {np.percentile(scores, percentile)}')
-    print(f'mean: {np.mean(scores)}')
+    scores = np.array(scores) # [N_CASE, N_AGENTS, N_ROUNDS]
+    for ag in range(scores.shape[1]):
+        for rd in range(scores.shape[2]):
+            print(f"Agent {ag} round {rd} scores:")
+            for percentile in [10,30,50,70,90]:
+                print(f'\tP{percentile} value: {np.percentile(scores[:,ag,rd].squeeze(), percentile)}')
+            print(f'\tmean: {np.mean(scores[:,ag,rd])}')
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -97,8 +107,12 @@ if __name__ == "__main__":
     with open(args.input_file, 'r') as f:
         data = f.readlines()
     prompts, responses, scores = get_all_scores(data, model)
-    to_dataframe = {'prompts':prompts, 'responses':responses, 'scores':scores}
-    df = pd.DataFrame.from_dict(to_dataframe)
-    df.to_csv(args.output_file)
-
+    for ag in range(len(responses[0])):
+        for rd in range(len(responses[0][ag])):
+            to_dataframe = {'prompts':prompts, 
+                            'responses':[r[ag][rd] for r in responses],
+                            'scores': [s[ag][rd] for s in scores]
+                            }
+            df = pd.DataFrame.from_dict(to_dataframe)
+            df.to_csv(args.output_file+f".agent{ag}_round{rd}")
     get_summary_statistics(scores)

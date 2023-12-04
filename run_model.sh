@@ -3,6 +3,7 @@ modelname=llama-2-7b-chat-hf
 intent=harmful
 modelname=$1
 intent=$2
+sleep $3
 
 '''
 sbatch -c 8 -N 1 --mem=45000 -p gpu --gres=gpu:1 --exclude=boston-2-[25,27,29,31,35] \
@@ -10,21 +11,23 @@ sbatch -c 8 -N 1 --mem=45000 -p gpu --gres=gpu:1 --exclude=boston-2-[25,27,29,31
     --input-file ./data/red_teams_small.txt \
     --output-file ./responses/${modelname}-${intent}-single-agent.txt \
     --model-type llama \
-    --llama-model-name $modelname \
-    --agent-intention $intent"
-
-srun -c 8 -N 1 --mem=45000 -p gpu --gres=gpu:1 --exclude=boston-2-[25,27,29,31] \
+    --agent-modelname $modelname \
+    --agent-intention $intent 
+'''
+'''
+srun -c 8 -N 1 --mem=45000 -p gpu --gres=gpu:1 --exclude=boston-2-[25,27] \
     python3 -u ./evaluate_model.py \
-    --input-file ./data/red_teams_small.txt \
+    --input-file ./data/red_teams_smallest.txt \
     --output-file ./responses/tr${modelname}-${intent}-single-agent.txt \
     --model-type llama \
-    --llama-model-name $modelname \
-    --agent-intention $intent
+    --agent-modelname $modelname \
+    --agent-intention $intent 
 '''
+
 srun -c 16 -N 1 --mem=90000 -p gpu --gres=gpu:2 --exclude=boston-2-[25,27,29,31] \
     python3 -u ./evaluate_model.py \
     --input-file ./data/red_teams_small.txt \
-    --output-file ./responses/tr${modelname}-${intent}-self-reflect.txt \
+    --output-file ./responses/${modelname}-${intent}.txt \
     --model-type multiagent \
     --agent-modelname $modelname \
     --agent-intention $intent \
