@@ -14,3 +14,6 @@ transformers==4.28.1
 google-api-python-client==2.108.0
 accelerate==0.24.1
 sentencepiece
+huggingface-hub==0.11.0
+sentence-transformers==2.2.2
+scikit-learn==1.0.1
