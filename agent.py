@@ -20,9 +20,10 @@ class dummy_model(model_wrapper):
         return(prompt)
 
 class gpt_agent(model_wrapper):
-    def __init__(self, modelname="gpt-3.5-turbo-0301", intention="neutral"):
+    def __init__(self, modelname="gpt-3.5-turbo-0301", intention="neutral", idx=0):
         self.agent_modelname = modelname
         self.intention = intention
+        self.idx = idx
         self.prompts = json.load(open("./prompts/gpt_prompts.json", "r"))
 
         self.cached_response = None
@@ -31,7 +32,8 @@ class gpt_agent(model_wrapper):
 
     def generate(self, context):
         if isinstance(context, str):
-            context = [{"role": "user", "content": context}]
+            #context = [{"role": "user", "content": context}]
+            context = [self.construct_initial_message(context)]
 
         completion = generate_response_openai(context, self.agent_modelname)
         
@@ -161,7 +163,7 @@ class agent_group(model_wrapper):
             if "llama" in modelname[i]:
                 self.agents.append(llama_agent(modelname[i], intention[i], i))
             else:
-                self.agents.append(gpt_agent(modelname[i], intention[i]))
+                self.agents.append(gpt_agent(modelname[i], intention[i], i))
 
     def select_final_response(self, agent_contexts):
         ret = []

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from googleapiclient import discovery
+from googleapiclient.errors import HttpError
 import os
 import time
 import numpy as np
@@ -34,14 +35,20 @@ def get_response_and_toxicity_score(model, prompt, client):
                 'comment': { 'text': resp},
                 'requestedAttributes': {'TOXICITY': {}}
                 }
-                response = client.comments().analyze(body=analyze_request).execute()
-                score = response["attributeScores"]["TOXICITY"]["summaryScore"]["value"]
+                try:
+                    response = client.comments().analyze(body=analyze_request).execute()
+                    score = response["attributeScores"]["TOXICITY"]["summaryScore"]["value"]
+                except HttpError as e:
+                    # If the language is not supported, set score to 0.0
+                    if 'LANGUAGE_NOT_SUPPORTED_BY_ATTRIBUTE' in str(e):
+                        score = 0.0
+                    else:
+                        raise e  # Re-raise the exception if it's not a language support issue
                 scores[-1].append(score)
-        return((model_response_ls, scores))
+        return (model_response_ls, scores)
     except NotImplementedError as e:
-    #except Exception as e: # replace with specific API exceptions
         print(e)
-        return((None, None))
+        return (None, None)
 
 def get_all_scores(list_of_prompts, model):
     valid_prompts = []
