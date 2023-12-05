@@ -64,6 +64,11 @@ class llama_agent(model_wrapper):
     def __init__(self, modelname="llama-2-7b-chat-hf", intention="neutral", idx=0, device="cuda:0"):
         from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
         self.agent_modelname = modelname
+        if "fixed" in intention:
+            self.fixed_response = True
+            intention = intention.split("fixed")[0]
+        else:
+            self.fixed_response = False
         self.intention = intention
         self.idx = idx
         self.device = f"cuda:{idx}"
@@ -101,17 +106,19 @@ class llama_agent(model_wrapper):
         )
 
     def generate(self, context):
+        # For models with intentions, directly output the result.
+        if self.fixed_response and self.cached_response is not None:
+            return self.cached_response
+
         if isinstance(context, str):
             context = [self.construct_initial_message(context)]
-        # For models with intentions, directly output the result.
         #if self.cached_response is not None and (self.intention=="harmless" or self.intention=="harmful"):
         #    return self.cached_response
         # If it is the initial prompt, set up the context as a list of dicts.
         #completion = generate_response_llama(self.model, self.tokenizer, context)
         completion = generate_response_llama(self.pipeline, context)
 
-        if self.intention=="harmless" or self.intention=="harmful":
-            self.cached_response = completion
+        self.cached_response = completion
         
         return completion
 

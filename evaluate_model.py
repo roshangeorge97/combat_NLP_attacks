@@ -19,7 +19,12 @@ def get_response_and_toxicity_score(model, prompt, client):
         scores = []
         for ag, resps in enumerate(model_response_ls):
             scores.append([])
+            cached_response = None
             for rd, resp in enumerate(resps):
+                if resp==cached_response:
+                    scores[-1].append(scores[-1][-1])
+                    continue 
+                cached_response = resp 
                 time.sleep(0.5) # avoid rate limit
                 if len(resp.strip())==0:
                     resp = "No response!"
