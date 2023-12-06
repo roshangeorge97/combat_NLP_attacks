@@ -11,7 +11,7 @@ def get_summary_statistics(scores):
             for percentile in [10,30,50,70,90]:
                 print(f'\tP{percentile} value: {np.percentile(scores[:,ag,rd].squeeze(), percentile)}')
             print(f'\tmean: {np.mean(scores[:,ag,rd])}')
-            print(f'\tPercentage>0.5: {np.mean(scores[:,ag,rd]>=0.5)}')
+            print(f'\tPercentage>0.1: {np.mean(scores[:,ag,rd]>=0.1)}')
 
 with open(sys.argv[1], 'r') as f:
     # read dataframe from file
