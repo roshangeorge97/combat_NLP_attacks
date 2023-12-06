@@ -77,6 +77,7 @@ def parse_args():
     parser.add_argument('--test-data', type=str, default=None)
     parser.add_argument('--threshold', type=float, default=0.415)
     parser.add_argument('--calibrate', action='store_true')
+    parser.add_argument('--multiturn', action='store_true')
     parser.add_argument('--output-path', type=str, default='test.csv')
     args = parser.parse_args()
     return(args)
@@ -101,9 +102,10 @@ if __name__ == "__main__":
         threshold = args.threshold
         pred_labels, scores = get_labels(model, tokenizer, test_texts, threshold)
         pd.DataFrame.from_dict({'texts':test_texts, 'pred':pred_labels, 'scores':scores}).to_csv(args.output_path)
-    
+        print(f'toxicity rate: {sum(pred_labels)/len(pred_labels)}, average score: {sum(scores)/len(scores)}')
+        print(f'P10, P50, P90 values: {np.quantile(scores, 0.1)}, {np.quantile(scores, 0.5)}, {np.quantile(scores, 0.9)}')
     else:
-        train_data, val_data, test_data = load_dataset(tokenizer)
+        train_data, val_data, test_data = load_dataset(tokenizer, use_multiturn=args.multiturn)
         val_texts = [s.split('</s>')[0] for s in tokenizer.batch_decode(val_data.encodings.input_ids)]
         test_texts = [s.split('</s>')[0] for s in tokenizer.batch_decode(test_data.encodings.input_ids)]
 
