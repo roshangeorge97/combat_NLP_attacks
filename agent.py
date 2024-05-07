@@ -20,11 +20,11 @@ class dummy_model(model_wrapper):
         return(prompt)
 
 class gpt_agent(model_wrapper):
-    def __init__(self, modelname="gpt-3.5-turbo-0301", intention="neutral", idx=0):
+    def __init__(self, modelname="gpt-3.5-turbo", intention="neutral", idx=0):
         self.agent_modelname = modelname
         self.intention = intention
         self.idx = idx
-        self.prompts = json.load(open("./prompts/gpt_prompts.json", "r"))
+        self.prompts = json.load(open("prompts\gpt_prompts.json", "r"))
 
         self.cached_response = None
         print(self.prompts)
@@ -87,14 +87,10 @@ class llama_agent(model_wrapper):
         # Load the model
         model_name_or_path = modelname
         int8 = False
-        self.model = AutoModelForCausalLM.from_pretrained(os.environ["LLAMA_ROOT"]+model_name_or_path,
-            torch_dtype=torch.float16,
-            load_in_8bit=int8,
-            max_memory=self.get_max_memory(),
-        ).to(self.device)
+        self.model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
         print("Model loaded")
         # Load the tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(os.environ["LLAMA_ROOT"]+model_name_or_path, use_fast=False)
+        self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
         
         self.pipeline=pipe = pipeline(
             "text-generation",
@@ -140,7 +136,7 @@ class llama_agent(model_wrapper):
         feedbacks = " ".join(feedbacks)
         prefix_string = self.prompts["discussion"][self.intention].replace("<TOPIC>", topic).replace("<FEEDBACK>", feedbacks)
 
-        return {"role": "user", "content": prefix_string}   
+        return {"role": "user", "content": prefix_string}
 
     def get_max_memory(self):
         """Get the maximum memory available for the current GPU for loading models."""
@@ -151,7 +147,7 @@ class llama_agent(model_wrapper):
         return max_memory   
     
 class agent_group(model_wrapper):
-    def __init__(self, n_agents=2, n_discussion_rounds=0, modelname="llama-2-7b-chat", intention="neutral"): 
+    def __init__(self, n_agents=2, n_discussion_rounds=2, modelname="llama-2-7b-chat", intention="neutral"): 
         self.n_agents = n_agents
         self.n_discussion_rounds = n_discussion_rounds
         if isinstance(modelname, str):
@@ -159,6 +155,8 @@ class agent_group(model_wrapper):
         if isinstance(intention, str):
             intention = [intention] * n_agents
         self.agents = []
+        intention[0] = 'neutral'
+        intention[1] = 'harmful'
         for i in range(n_agents):
             if "llama" in modelname[i]:
                 self.agents.append(llama_agent(modelname[i], intention[i], i))
@@ -193,10 +191,10 @@ class agent_group(model_wrapper):
                 # Create new answer
                 agent_response = ag.construct_assistant_message_from_completion(ag.generate(agent_contexts[i]))
                 agent_contexts[i].append(agent_response)
-        '''
+        
         for i, agent_context in enumerate(agent_contexts):
             print(f"Agent {i}: ")
             for message in agent_context:
                 print(f"\t{message['role']}: {message['content']}\n")
-        '''
-        return self.select_final_response(agent_contexts)  
+        
+        return self.select_final_response(agent_contexts) 

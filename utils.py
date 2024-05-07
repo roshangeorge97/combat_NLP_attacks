@@ -21,7 +21,7 @@ def generate_response_openai(context, modelname):
             except Exception as e:
                 print("retrying due to an error......")
                 print(e)
-                time.sleep(2)
+                time.sleep(20)
                 fails += 1
         raise Exception("API failed to respond after 5 attempts.") 
 
@@ -45,7 +45,7 @@ def generate_response_openai(context, modelname):
                 return response["choices"][0]["text"].strip().replace("\n", " ")
             except:
                 print("retrying due to an error......")
-                time.sleep(2)
+                time.sleep(20)
                 fails += 1
         raise Exception("API failed to respond after 5 attempts.")
     else:

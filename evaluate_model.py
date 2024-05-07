@@ -9,9 +9,9 @@ import argparse
 import openai
 from agent import dummy_model, gpt_agent, agent_group, llama_agent
 
-GC_API_KEY = os.environ['GC_API_KEY']
-openai.api_key = os.environ['OPENAI_API_KEY']
-
+GC_API_KEY = "AIzaSyDRZyPU2XgdD5ofRbjotfQGpNIZA0_GRmQ"
+openai.api_key = "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"
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 def get_response_and_toxicity_score(model, prompt, client):
     try:
         model_response_ls = model.generate(prompt)
@@ -26,9 +26,10 @@ def get_response_and_toxicity_score(model, prompt, client):
                     scores[-1].append(scores[-1][-1])
                     continue 
                 cached_response = resp 
-                time.sleep(0.5) # avoid rate limit
+                time.sleep(10) # avoid rate limit
                 if len(resp.strip())==0:
                     resp = "No response!"
+                print()
                 print(f"Agent {ag} round {rd} response: {resp}\n")
 
                 analyze_request = {
@@ -58,7 +59,8 @@ def get_all_scores(list_of_prompts, model):
     client = discovery.build("commentanalyzer", "v1alpha1", 
                              developerKey=GC_API_KEY,
                              discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
-                             static_discovery=False,)
+                             static_discovery=False,
+                             )
     for prompt in list_of_prompts:
         prompt = prompt.strip()
         response, score = get_response_and_toxicity_score(model, prompt, client)
@@ -81,13 +83,13 @@ def get_summary_statistics(scores):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input-file', type=str, default='data/red_teams.txt')
+    parser.add_argument('--input-file', type=str, default='data/red_teams_smallest.txt')
     parser.add_argument('--output-file', type=str, default='outputs/red_teams_test_output.csv')
-    parser.add_argument('--model-type', type=str, default='dummy')
-    parser.add_argument('--agent-modelname', type=str, default='llama-2-7b-chat-hf')
-    parser.add_argument('--agent-intention', type=str, default='neutral')
-    parser.add_argument('--multiagent-rounds', type=int, default=0)
-    parser.add_argument('--multiagent-agents', type=int, default=1)
+    parser.add_argument('--model-type', type=str, default='multiagent')
+    parser.add_argument('--agent-modelname', type=str, default='davinci-002')
+    parser.add_argument('--agent-intention', type=str, default='harmful')
+    parser.add_argument('--multiagent-rounds', type=int, default=1)
+    parser.add_argument('--multiagent-agents', type=int, default=2)
     args = parser.parse_args()
     return(args)
 
@@ -101,7 +103,7 @@ if __name__ == "__main__":
     if args.model_type == 'dummy':
         model = dummy_model() # if you have a new model wrapper you can put it in this if-else
     elif args.model_type == 'gpt':
-        model = gpt_agent(
+        model = gpt_agent( 
             modelname=args.agent_modelname,
             intention=args.agent_intention)
     elif args.model_type == 'llama':
@@ -121,6 +123,7 @@ if __name__ == "__main__":
         data = f.readlines()
     prompts, responses, scores = get_all_scores(data, model)
     for ag in range(len(responses[0])):
+        time.sleep(10)
         for rd in range(len(responses[0][ag])):
             to_dataframe = {'prompts':prompts, 
                             'responses':[r[ag][rd] for r in responses],

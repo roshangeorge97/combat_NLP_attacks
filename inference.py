@@ -1,11 +1,10 @@
 from transformers import (
-    GPTQConfig, 
     AutoModelForCausalLM, 
     LlamaTokenizer)
 from transformers import GenerationConfig
-from peft import get_peft_config, get_peft_model, PeftModel, PeftConfig
+from peft import PeftModel, PeftConfig
 
-from bad_dataloader import load_dataset, fit_to_prompt_template
+from bad_dataloader import load_dataset
 from torch.utils.data import DataLoader
 import random
 
